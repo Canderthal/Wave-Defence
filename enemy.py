@@ -12,7 +12,8 @@ class Enemy(pygame.sprite.Sprite):
         self.type = type
 
         if self.type == "tank":
-            self.health = 30
+            self.health = 100
+            self.speed = 1
 
 
     def update(self):

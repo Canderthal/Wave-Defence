@@ -104,7 +104,7 @@ def move_enemy():
 
 def powerup(amount):
     for _ in range(amount):
-        power = Powerup(WIDTH + random.randint(10, 200), random.randint(50, HEIGHT - 50), 20, 20, power_up_imgage)
+        power = Powerup(WIDTH + random.randint(10, 200), random.randint(50, HEIGHT - 50), 20, 20, power_up_image)
         powerup_list.add(power)
 def move_powerup():
     for power in powerup_list:
@@ -113,7 +113,19 @@ def move_powerup():
         if power.rect.left <= 0:
             powerup_list.remove(power)
 
-spawn_enemy(5)
+def display_target_priority_menu(turret):
+    menu_font = pygame.font.Font(None, 36)
+    text = ["Select Target Priority:", "1 - Closest Enemy", "2 - Strongest Enemy", "3 - Weakest Enemy"]
+    text_y = turret.rect.centery + turret.rect.size[1] + 20
+
+    for line in text:
+        text_surface = menu_font.render(line, True, (255, 255, 255))
+        text_rect = text_surface.get_rect(center=(constants.WIDTH // 2, text_y))
+        screen.blit(text_surface, text_rect)
+        text_y += 40
+
+
+spawn_enemy(1)
 #powerup(5)
 money = 300
 last_turret = pygame.time.get_ticks()
@@ -131,30 +143,56 @@ while run:
         turret.draw(screen)
         turret.turret_bullets.update()
         for bullet in turret.turret_bullets:
+            time = pygame.time.get_ticks()
+            if time - bullet.fired_at > 400:
+                turret.turret_bullets.remove(bullet)
             for enemy in enemy_list:
                 if bullet.rect.colliderect(enemy.rect):
                     enemy.health -= 10
                     if enemy.health <= 0:
                         enemy_list.remove(enemy)
-                        money += 10
+                        if enemy.type == "tank":
+                            money += 5
+                        else:
+                            money += 1
                     turret.turret_bullets.remove(bullet)
-                    if len(enemy_list) < 15:
+                    if len(enemy_list) < 5:
                         spawn_enemy(1)
-                    print(turret.turret_bullets)
+
 
         #Event Handler
     keys = pygame.key.get_pressed()
     if event.type == pygame.MOUSEBUTTONDOWN:
-        if pygame.time.get_ticks() - last_turret >= 500 and money > 100:
-            spawn_turret()
-            money -= 100
-            last_turret = pygame.time.get_ticks()
+        if event.button == 2:
+            if pygame.time.get_ticks() - last_turret >= 500 and money > 200:
+                spawn_turret()
+                money -= 200
+                last_turret = pygame.time.get_ticks()
+        elif event.button == 3:
+            for turret in turret_list:
+                if turret.rect.collidepoint(pygame.mouse.get_pos()):
+                    display_target_priority_menu(turret)
+                    pygame.display.flip()
+                    waiting_for_input = True
+
+                    while waiting_for_input:
+                        for event in pygame.event.get():
+                            if event.type == pygame.KEYDOWN:
+                                if event.key == pygame.K_1:
+                                    turret.target_priority = "Closest Enemy"
+                                elif event.key == pygame.K_2:
+                                    turret.target_priority = "Strongest Enemy"
+                                elif event.key == pygame.K_3:
+                                    turret.target_priority ="Weakest Enemy"
+                                waiting_for_input = False
     pygame.display.update()
-    money += 0.1
+    money += 0.5
     print(f"money: {money}")
 pygame.quit()
 
 
 
-#Mouse click is spawning multiple turrets which is causing multiple bullets to come out
-#Need to add wave limiter to reduce insane amount of enemies
+
+
+#Need some sort of indication the type of target priority for turrets
+#Diff pixel image if strongest. Green, yellow, red ?
